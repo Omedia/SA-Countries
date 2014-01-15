@@ -1,0 +1,76 @@
+<?php
+
+/**
+ * implements hook_install()
+ *
+ * @return void
+ * @author Giorgi Jibladze
+ */
+function sa_countries_install() {
+	/* import data */
+	$path = drupal_get_path('module', 'sa_countries') . '/data.inc';
+	$data = file_get_contents($path);
+	$data = unserialize($data);
+
+	variable_set('sa_countries_data', $data);
+	$data = variable_get('sa_countries_data', array());
+	
+	/* create vocabulary */
+	$countries_voc = (object) array(
+    'name'         => 'Countries and Regions (Site Architect)',
+    'description'  => 'Special vocabulary for module SA Countries, containing list of countries and regions',
+    'machine_name' => 'sa_countries_list',
+  );
+	taxonomy_vocabulary_save($countries_voc);
+	
+	$countries_voc = taxonomy_vocabulary_machine_name_load('sa_countries_list');
+	
+	__sa_load_countries($data, $countries_voc, 0);	
+}
+
+
+/**
+ * loads terms recursively
+ *
+ * @return void
+ * @author Giorgi Jibladze
+ */
+function __sa_load_countries($data, $voc, $parent = 0) {
+	foreach($data as $key => $item) {
+		if (is_array($item)) {
+			if (isset($item['ISO'])) {
+				$desc = $item['ISO'];
+			} else {
+				$desc = 'Region';
+			}
+			$term	= (object) array(
+		   'name'        => $key,
+		   'description' => $desc,
+		   'vid'         => $voc->vid,
+			 'parent'			 => $parent,
+			);
+			taxonomy_term_save($term);
+			__sa_load_countries($item, $voc, $term->tid);
+		} else {
+			$term	= (object) array(
+		   'name'        => $item,
+		   'description' => $key,
+		   'vid'         => $voc->vid,
+			 'parent'			 => $parent,
+			);
+			taxonomy_term_save($term);
+		}
+	}
+}
+
+
+/**
+ * implements hook_uninstall()
+ *
+ * @return void
+ * @author Giorgi Jibladze
+ */
+function sa_countries_uninstall() {
+  $vocab = taxonomy_vocabulary_machine_name_load('sa_countries_list');
+  taxonomy_vocabulary_delete($vocab->vid);
+}

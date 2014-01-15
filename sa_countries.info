@@ -1,0 +1,5 @@
+name="SA Countries"
+description="Site Architect's (Omedia's Drupal Profile) module. Creates taxonomy vocabulary with countries and regions"
+core=7.x
+version=1.0
+package=Site Architect
